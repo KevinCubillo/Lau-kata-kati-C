@@ -26,39 +26,24 @@ struct Casilla* crearCasilla(int indice) {
 }
 
 
-void colocarFicha(struct Tablero* tablero, int casilla, int ficha) {
-    // Verificar si la casilla existe en el tablero
-    if (casilla < 0 || casilla >= tablero->numCasillas) {
-        printf("Casilla inválida.\n");
+    void colocarFicha(struct Tablero* tablero, int casilla, int ficha) {
+    if (casilla < 1 || casilla > tablero->numCasillas) {
+        printf("Error: Casilla inválida\n");
         return;
     }
-    // Buscar la casilla en la lista de adyacencia
-    struct Casilla* actual = tablero->listaAdyacencia[casilla];
-    while (actual) {
-        // Actualizar la ficha de la casilla encontrada
-        if (actual->indice == casilla) {
-            actual->ficha = ficha;
-            printf("Ficha colocada en la casilla %d.\n", casilla);
-            return;
-        }
-        actual = actual->siguiente;
-    }
-
-    // Si no se encontró la casilla en la lista de adyacencia
-    printf("Casilla no encontrada en el tablero.\n");
+    tablero->listaAdyacencia[casilla]->ficha = ficha;
 }
 
+
 // Función para añadir una conexión entre dos casillas en el tablero (bidireccional)
-void agregarConexion(struct Tablero* tablero, int casilla1, int casilla2) {
+void agregarConexion(struct Tablero* tablero, struct Casilla* casilla1, struct Casilla* casilla2) {
     // Añadir conexión desde casilla1 a casilla2
-    struct Casilla* nuevaCasilla = crearCasilla(casilla2);
-    nuevaCasilla->siguiente = tablero->listaAdyacencia[casilla1];
-    tablero->listaAdyacencia[casilla1] = nuevaCasilla;
+    casilla2->siguiente = tablero->listaAdyacencia[casilla1->indice];
+    tablero->listaAdyacencia[casilla1->indice] = casilla2;
 
     // Añadir conexión desde casilla2 a casilla1
-    nuevaCasilla = crearCasilla(casilla1);
-    nuevaCasilla->siguiente = tablero->listaAdyacencia[casilla2];
-    tablero->listaAdyacencia[casilla2] = nuevaCasilla;
+    casilla1->siguiente = tablero->listaAdyacencia[casilla2->indice];
+    tablero->listaAdyacencia[casilla2->indice] = casilla1;
 }
 
 
@@ -71,29 +56,28 @@ struct Tablero* crearTablero(int profundidad) {
     tablero->listaAdyacencia = (struct Casilla**)malloc(numCasillas * sizeof(struct Casilla*));
     
     for (int i = 1; i < numCasillas+1; i++) {
-        tablero->listaAdyacencia[i] = NULL;
+        tablero->listaAdyacencia[i] = crearCasilla(i);
     }
-   // tablero->listaAdyacencia[numCasillas - 1] = NULL;
-
     //conexiones casilla central
     int casillaCentral = ((numCasillas - 1) / 2)+1;
-
+/*
     // Arriba
-    agregarConexion(tablero, casillaCentral, casillaCentral - 1);
-    agregarConexion(tablero, casillaCentral, casillaCentral -2);
-    agregarConexion(tablero, casillaCentral, casillaCentral -3);
+    agregarConexion(tablero, tablero->listaAdyacencia[casillaCentral], tablero->listaAdyacencia[casillaCentral - 1]);
+    agregarConexion(tablero, tablero->listaAdyacencia[casillaCentral], tablero->listaAdyacencia[casillaCentral - 2]);
+    agregarConexion(tablero, tablero->listaAdyacencia[casillaCentral], tablero->listaAdyacencia[casillaCentral - 3]);
 
-    //Abajo
-    agregarConexion(tablero, casillaCentral, casillaCentral + 1);
-    agregarConexion(tablero, casillaCentral, casillaCentral + 2);
-    agregarConexion(tablero, casillaCentral, casillaCentral + 3);
+    // Abajo
+    agregarConexion(tablero, tablero->listaAdyacencia[casillaCentral], tablero->listaAdyacencia[casillaCentral + 1]);
+    agregarConexion(tablero, tablero->listaAdyacencia[casillaCentral], tablero->listaAdyacencia[casillaCentral + 2]);
+    agregarConexion(tablero, tablero->listaAdyacencia[casillaCentral], tablero->listaAdyacencia[casillaCentral + 3]);
 
-    //Conexiones primer fila
-    agregarConexion(tablero, casillaCentral - 1, casillaCentral - 2);
-    agregarConexion(tablero, casillaCentral - 2, casillaCentral - 3);
+    // Conexiones primera fila
+    agregarConexion(tablero, tablero->listaAdyacencia[casillaCentral - 1], tablero->listaAdyacencia[casillaCentral - 2]);
+    agregarConexion(tablero, tablero->listaAdyacencia[casillaCentral - 2], tablero->listaAdyacencia[casillaCentral - 3]);
 
-    agregarConexion(tablero, casillaCentral + 1, casillaCentral + 2);
-    agregarConexion(tablero, casillaCentral + 2, casillaCentral + 3);
+    agregarConexion(tablero, tablero->listaAdyacencia[casillaCentral + 1], tablero->listaAdyacencia[casillaCentral + 2]);
+    agregarConexion(tablero, tablero->listaAdyacencia[casillaCentral + 2], tablero->listaAdyacencia[casillaCentral + 3]);
+
 
 
     int columnaActual = 1;
@@ -101,39 +85,39 @@ struct Tablero* crearTablero(int profundidad) {
     //Conexiones Arriba
     for (int casillaActual = 1; casillaActual < casillaCentral-3; casillaActual++) {
         if (columnaActual == 1){
-            agregarConexion(tablero, casillaActual, casillaActual + 1);
-            agregarConexion(tablero, casillaActual, casillaActual + 3);
+            agregarConexion(tablero, tablero->listaAdyacencia[casillaActual], tablero->listaAdyacencia[casillaActual + 1]);
+            agregarConexion(tablero, tablero->listaAdyacencia[casillaActual], tablero->listaAdyacencia[casillaActual + 3]);
+            columnaActual = 2;
             columnaActual = 2;
         }
         else if (columnaActual == 2) {
-            agregarConexion(tablero, casillaActual, casillaActual + 1);
-            agregarConexion(tablero, casillaActual, casillaActual + 3);
+            agregarConexion(tablero, tablero->listaAdyacencia[casillaActual], tablero->listaAdyacencia[casillaActual + 1]);
+            agregarConexion(tablero, tablero->listaAdyacencia[casillaActual], tablero->listaAdyacencia[casillaActual + 3]);
             columnaActual = 3;
         }
         else {
-            agregarConexion(tablero, casillaActual, casillaActual + 3);
+            agregarConexion(tablero, tablero->listaAdyacencia[casillaActual], tablero->listaAdyacencia[casillaActual + 3]);
             columnaActual = 1;
         }
     } 
     columnaActual = 1;
 
     //Conexiones Abajo
-    for (int casillaActual = numCasillas; casillaActual > casillaCentral+3; casillaActual--) {
+   for (int casillaActual = numCasillas; casillaActual>casillaCentral+3; casillaActual--) {
         if (columnaActual == 1) {
-            agregarConexion(tablero, casillaActual, casillaActual - 1);
-            agregarConexion(tablero, casillaActual, casillaActual - 3);
+            agregarConexion(tablero, tablero->listaAdyacencia[casillaActual], tablero->listaAdyacencia[casillaActual - 1]);
+            agregarConexion(tablero, tablero->listaAdyacencia[casillaActual], tablero->listaAdyacencia[casillaActual - 3]);
             columnaActual = 2;
-        }
-        else if (columnaActual == 2) {
-            agregarConexion(tablero, casillaActual, casillaActual - 1);
-            agregarConexion(tablero, casillaActual, casillaActual - 3);
+        } else if (columnaActual == 2) {
+            agregarConexion(tablero, tablero->listaAdyacencia[casillaActual], tablero->listaAdyacencia[casillaActual - 1]);
+            agregarConexion(tablero, tablero->listaAdyacencia[casillaActual], tablero->listaAdyacencia[casillaActual - 3]);
             columnaActual = 3;
-        }
-        else{
-            agregarConexion(tablero, casillaActual, casillaActual - 3);
+        } else {
+            agregarConexion(tablero, tablero->listaAdyacencia[casillaActual], tablero->listaAdyacencia[casillaActual - 3]);
             columnaActual = 1;
         }
-    }
+    }*/
+
     return tablero;
 }
 
@@ -152,8 +136,8 @@ void imprimirTablero(struct Tablero* tablero) {
 int main() {
     int profundidad = 3;
     struct Tablero* tablero = crearTablero(profundidad);
+    
 
-   imprimirTablero(tablero);
-
+    imprimirTablero(tablero);
     return 0;
 }
