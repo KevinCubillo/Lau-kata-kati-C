@@ -40,6 +40,71 @@ struct Cell* goTopos(struct Board* board, int pos) {
     return current;
 }
 
+void placeToken(struct Board* board, int cell, int token) {
+    struct Cell* current = goTopos(board, cell);
+    current->token = token;
+}
+
+int isNeighbor(int cell1, int cell2, struct Board* board) {
+    struct Cell* current = goTopos(board, cell1);
+    for (int i = 0; i < current->numNeighbors; i++) {
+        if (current->neighbors[i] == cell2) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+void moveToken (int source, int destination, struct Board* board){
+    struct Cell* sourceCell = goTopos(board, source);
+    struct Cell* destinationCell = goTopos(board, destination);
+    struct Cell* intermediateCell;
+
+    if (isNeighbor(source, destination, board) == 1 && destinationCell->token == 0){ //Caso en el que la casilla de destino es vecina de la casilla de origen
+        destinationCell->token = sourceCell->token;
+        sourceCell->token = 0; 
+        printf("Movimiento exitoso\n"); 
+        return;
+    }
+    //recorre los vecinos de la casilla de origen
+    
+    for (int i = 0; i < destinationCell->numNeighbors; i++){
+        intermediateCell = goTopos(board, destinationCell->neighbors[i]);
+
+        if (isNeighbor(source, destinationCell->neighbors[i], board) && intermediateCell->token != 0 && intermediateCell->token != sourceCell->token && destinationCell->token == 0){
+            destinationCell->token = sourceCell->token;
+            sourceCell->token = 0;
+            intermediateCell->token = 0;
+            printf("Movimiento exitoso\n");
+            return;
+        }
+    }
+    printf("Movimiento inválido\n");
+    return;
+}
+
+int checkWinner (struct Board* board){
+    int player1 = 0;
+    int player2 = 0;
+    struct Cell* current = board->root;
+    for (int i = 0; i < board->numCells; i++){
+        if (current->token == 1){
+            player1++;
+        }
+        if (current->token == 2){
+            player2++;
+        }
+        current = current->next;
+    }
+    if (player1 == 0){
+        return 2;
+    }
+    if (player2 == 0){
+        return 1;
+    }
+    return 0;
+}
+
 
 void addConnection(struct Board* board, int cell1, int cell2) {
     struct Cell* cell_1 = goTopos(board, cell1);
@@ -118,30 +183,119 @@ struct Board* createBoard(int depth) {
     return board;
 }
 
-void printBoard(struct Board* board) {
-    struct Cell* current = board->root;
-    for (int i = 0; i < board->numCells; i++) {
-        printf("%d: ", i);
-        for (int j = 0; j < current->numNeighbors; j++) {
-            printf("%d ", current->neighbors[j]);
-        }
-        printf(" Token: %d", current->token);
-        printf("\n");
-        current = current->next;
+void printVerticalSpaces(int amount){
+    for (int i = 0; i <amount; i++) {
+        printf(" ");
     }
+    return;
 }
 
-void placeToken(struct Board* board, int cell, int token) {
-    struct Cell* current = goTopos(board, cell);
-    current->token = token;
+void printBoard(struct Board* board, int depth) {
+    struct Cell* current = board->root;
+    int centralSpaces = 2*depth;
+    int leftSpaces = 0;
+    int cellIndex = 0;
+
+    //Imprimir Triangulo superior
+    for (int i = 0; i <depth; i++) {
+        printf("\n\n");
+        printVerticalSpaces(leftSpaces);
+
+        for (int j = 0; j < 3; j++) {
+            if (current->token == 0){
+                printf("( )");
+            }
+            if (current->token == 1){
+                printf("(X)");
+            }
+            if (current->token == 2){
+                printf("(O)");
+            }
+            printVerticalSpaces(centralSpaces);
+            current = current->next;
+        }
+
+        printf("\n");
+        printVerticalSpaces(leftSpaces);
+
+        for (int j = 0; j < 3; j++) {
+            printf(" %d ", cellIndex);
+            cellIndex++;
+            printVerticalSpaces(centralSpaces);
+        }    
+        centralSpaces -= 2;
+        leftSpaces += 2;
+    }
+
+    //Imprimir casilla central
+    printf("\n\n");
+    printVerticalSpaces(leftSpaces + 3);
+    current = current->next;
+    if (current->token == 0){
+            printf("( )");
+        }
+        if (current->token == 1){
+                printf("(X)");
+        }
+        if (current->token == 2){
+            printf("(O)");
+        } 
+    printf("\n");
+    printVerticalSpaces(leftSpaces+3);
+    printf(" %d ", cellIndex);
+    cellIndex++;
+
+    // Restaurar valores iniciales para el Triángulo inferior
+    centralSpaces = 2;
+    leftSpaces -= 2;
+
+
+    //Imprimir Triangulo inferior
+    for (int i = 0; i <depth; i++) {
+        printf("\n\n");
+        printVerticalSpaces(leftSpaces);
+
+        for (int j = 0; j < 3; j++) {
+            if (current->token == 0){
+                printf("( )");
+            }
+            if (current->token == 1){
+                printf("(X)");
+            }
+            if (current->token == 2){
+                printf("(O)");
+            }
+            printVerticalSpaces(centralSpaces);
+            current = current->next;
+        }
+
+        printf("\n");
+        printVerticalSpaces(leftSpaces);
+
+        for (int j = 0; j < 3; j++) {
+            printf(" %d ", cellIndex);
+            cellIndex++;
+            printVerticalSpaces(centralSpaces);
+        }    
+        centralSpaces += 2;
+        leftSpaces -= 2;
+    }
+    return;
+
 }
+  
+
 
 int main(){
-    int depth = 5;
-    struct Board* board = createBoard(depth);
-    printBoard(board);
-    printf("numCells: %d\n", board->numCells);
+    int currentPlayer = 1; //Jugador actual
+    int depth, source, destination; ; //profundidad del tablero, casiila de origen y casilla de destino
+
+    printf("Digite la profundidad del tablero: ");
+    scanf("%d", &depth);
+
+    struct Board* board = createBoard(depth); //Creación del tablero
+    printBoard(board, depth); //Impresión del tablero
+
+    
     return 0;
 }
-
-  
