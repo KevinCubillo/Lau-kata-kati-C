@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+int MAX_NUM_NEIGHBORS = 6;
 
 // Definición de la estructura Casilla
 struct Cell {
    // int index;
     int token;
-    int neighbors[6];
+    int* neighbors;
     int numNeighbors;
     struct Cell* next;
     struct Cell* prev;
@@ -24,6 +25,7 @@ struct Cell* createCell(int index) {
     cell->token = 0;
     cell->next = NULL;
     cell->prev = NULL;
+    cell->neighbors = (int*)malloc(MAX_NUM_NEIGHBORS*sizeof(int));
     cell->numNeighbors = 0;
     return cell;
 }
@@ -55,7 +57,7 @@ int isNeighbor(int cell1, int cell2, struct Board* board) {
     return 0;
 }
 
-void moveToken (int source, int destination, struct Board* board){
+int moveToken (int source, int destination, struct Board* board){
     struct Cell* sourceCell = goTopos(board, source);
     struct Cell* destinationCell = goTopos(board, destination);
     struct Cell* intermediateCell;
@@ -64,7 +66,7 @@ void moveToken (int source, int destination, struct Board* board){
         destinationCell->token = sourceCell->token;
         sourceCell->token = 0; 
         printf("Movimiento exitoso\n"); 
-        return;
+        return 1; 
     }
     //recorre los vecinos de la casilla de origen
     
@@ -75,12 +77,12 @@ void moveToken (int source, int destination, struct Board* board){
             destinationCell->token = sourceCell->token;
             sourceCell->token = 0;
             intermediateCell->token = 0;
-            printf("Movimiento exitoso\n");
-            return;
+            printf("Movimiento exitoso, captura realizada\n");
+            return 1;
         }
     }
     printf("Movimiento inválido\n");
-    return;
+    return 0;
 }
 
 int checkWinner (struct Board* board){
@@ -221,7 +223,12 @@ void printBoard(struct Board* board, int depth) {
         for (int j = 0; j < 3; j++) {
             printf(" %d ", cellIndex);
             cellIndex++;
-            printVerticalSpaces(centralSpaces);
+            if (cellIndex%100>=10){
+                printVerticalSpaces(centralSpaces-1);
+            }
+            else{
+                printVerticalSpaces(centralSpaces);
+            }
         }    
         centralSpaces -= 2;
         leftSpaces += 2;
@@ -230,16 +237,16 @@ void printBoard(struct Board* board, int depth) {
     //Imprimir casilla central
     printf("\n\n");
     printVerticalSpaces(leftSpaces + 3);
-    current = current->next;
     if (current->token == 0){
             printf("( )");
-        }
-        if (current->token == 1){
-                printf("(X)");
-        }
-        if (current->token == 2){
-            printf("(O)");
-        } 
+    }
+    if (current->token == 1){
+            printf("(X)");
+    }
+    if (current->token == 2){
+        printf("(O)");
+    } 
+
     printf("\n");
     printVerticalSpaces(leftSpaces+3);
     printf(" %d ", cellIndex);
@@ -248,7 +255,7 @@ void printBoard(struct Board* board, int depth) {
     // Restaurar valores iniciales para el Triángulo inferior
     centralSpaces = 2;
     leftSpaces -= 2;
-
+    current = current->next;
 
     //Imprimir Triangulo inferior
     for (int i = 0; i <depth; i++) {
@@ -275,7 +282,12 @@ void printBoard(struct Board* board, int depth) {
         for (int j = 0; j < 3; j++) {
             printf(" %d ", cellIndex);
             cellIndex++;
-            printVerticalSpaces(centralSpaces);
+            if (cellIndex%100>=10){
+                printVerticalSpaces(centralSpaces-1);
+            }
+            else{
+                printVerticalSpaces(centralSpaces);
+            }
         }    
         centralSpaces += 2;
         leftSpaces -= 2;
@@ -290,12 +302,61 @@ int main(){
     int currentPlayer = 1; //Jugador actual
     int depth, source, destination; ; //profundidad del tablero, casiila de origen y casilla de destino
 
-    printf("Digite la profundidad del tablero: ");
-    scanf("%d", &depth);
+    while (depth < 3){
+        printf("\nDigite la profundidad del tablero: ");
+        scanf("%d", &depth);
+        if (depth < 3){
+            printf("Error: Profundidad inválida\n");
+        }
+    }
 
     struct Board* board = createBoard(depth); //Creación del tablero
-    printBoard(board, depth); //Impresión del tablero
 
-    
+
+   while (checkWinner(board) == 0){
+        printBoard(board, depth); //Imprimir tablero
+        if (currentPlayer == 1){
+            printf("\n\nJugador X, digite la casilla de origen: ");
+            scanf("%d", &source);
+            if (source > board->numCells || source < 0){
+                printf("Error: Casilla inválida\n");
+                continue;
+            }
+            if (goTopos(board, source)->token != 1){
+                printf("Error: Solo puedes mover tus propias fichas\n");
+                continue;
+            }
+            printf("Jugador X, digite la casilla de destino: ");
+            scanf("%d", &destination);
+        }
+        else{
+            printf("\n\nJugador O, digite la casilla de origen: ");
+            scanf("%d", &source);
+            if (source > board->numCells || source < 0){
+                printf("Error: Casilla inválida\n");
+                continue;
+            }
+            if (goTopos(board, source)->token != 2){
+                printf("Error: Solo puedes mover tus propias fichas\n"); //CORREGIR MENSAJE
+                continue;
+            }
+            printf("Jugador X, digite la casilla de destino: ");
+            scanf("%d", &destination);
+        }
+        if (moveToken(source, destination, board) == 0){//Mover ficha
+            continue;
+        }
+        if (currentPlayer == 1){
+            currentPlayer = 2;
+        }
+
+        else{
+            currentPlayer = 1;
+        }
+    }
+    printBoard(board, depth);
+    printf("\n\nEl ganador es el jugador %d\n", checkWinner(board));
+
     return 0;
 }
+
