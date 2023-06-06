@@ -118,20 +118,28 @@ void addConnection(struct Board* board, int cell1, int cell2) {
 }
 
 
-struct Board* createBoard(int depth) {
+struct Board* createBoard(int depth, int topPlayer) {
     int numCells = (6 * depth)+1;
     struct Board* board = (struct Board*)malloc(sizeof(struct Board));
     board->numCells = numCells;
     board->root = createCell(0);
     struct Cell* current = board->root;
 
+
     //Colocar las fichas iniciales
+    int bottomPlayer;
+    if (topPlayer == 1){
+        bottomPlayer = 2;
+    }
+    else{
+        bottomPlayer = 1;
+    }   
     for (int i = 1; i < numCells+1; i++) {
          if (i<10){
-            current->token = 1;   
+            current->token = topPlayer;   
         }
         if (i>numCells-9){
-            current->token = 2;
+            current->token = bottomPlayer;
         }
         current->next = createCell(i);
         current = current->next;    
@@ -300,7 +308,7 @@ void printBoard(struct Board* board, int depth) {
 
 int main(){
     int currentPlayer = 1; //Jugador actual
-    int depth, source, destination; ; //profundidad del tablero, casiila de origen y casilla de destino
+    int depth, source, destination, topPlayer; //profundidad del tablero, casiila de origen y casilla de destino
 
     while (depth < 3){
         printf("\nDigite la profundidad del tablero: ");
@@ -310,7 +318,17 @@ int main(){
         }
     }
 
-    struct Board* board = createBoard(depth); //Creación del tablero
+    printf("\n Digite quien empieza: \n 1. Jugador X \n 2. Jugador O \n");
+    while (scanf("%d", &currentPlayer) != 1 || currentPlayer < 1 || currentPlayer > 2){
+        printf("Error: Jugador inválido\n");
+    }
+    
+    printf("Digite quien juega en lado de arriba del tablero: \n 1. Jugador X \n 2. Jugador O \n");
+    while (scanf("%d", &topPlayer) != 1 || topPlayer < 1 || topPlayer > 2){
+        printf("Error: Jugador inválido\n");
+    }
+    
+    struct Board* board = createBoard(depth,topPlayer); //Creación del tablero
 
 
    while (checkWinner(board) == 0){
@@ -349,7 +367,6 @@ int main(){
         if (currentPlayer == 1){
             currentPlayer = 2;
         }
-
         else{
             currentPlayer = 1;
         }
