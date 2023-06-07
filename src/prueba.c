@@ -1,13 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
-int MAX_NUM_NEIGHBORS = 6;
+#include <math.h>
 
 // Definición de la estructura Casilla
 struct Cell {
-   // int index;
     int token;
-    int* neighbors;
-    int numNeighbors;
     struct Cell* next;
     struct Cell* prev;
 };
@@ -25,8 +22,6 @@ struct Cell* createCell(int index) {
     cell->token = 0;
     cell->next = NULL;
     cell->prev = NULL;
-    cell->neighbors = (int*)malloc(MAX_NUM_NEIGHBORS*sizeof(int));
-    cell->numNeighbors = 0;
     return cell;
 }
 
@@ -42,79 +37,289 @@ struct Cell* goTopos(struct Board* board, int pos) {
     return current;
 }
 
-void placeToken(struct Board* board, int cell, int token) {
-    struct Cell* current = goTopos(board, cell);
-    current->token = token;
-}
 
-int isNeighbor(int cell1, int cell2, struct Board* board) {
-    struct Cell* current = goTopos(board, cell1);
-    for (int i = 0; i < current->numNeighbors; i++) {
-        if (current->neighbors[i] == cell2) {
+int isValidMove(int source, int destination, struct Board* board) {
+    struct Cell* sourceCell = goTopos(board, source);
+    struct Cell* destinationCell = goTopos(board, destination);
+    struct Cell* intermediateCell;
+    int centralCell = ((board->numCells - 1) / 2); // Cálculo de la casilla central
+
+    if (destinationCell->token != 0) {
+        // La casilla de destino ya está ocupada, el movimiento no es válido
+        return 0;
+    }
+    // MOVIMIENTOS SIMPLES
+    // MOVIMIENTOS SOBRE LA CASILLA CENTRAL
+    if ((destination == centralCell + 1 || destination == centralCell - 1 || destination == centralCell + 2 || destination == centralCell - 2 ||
+         destination == centralCell + 3 || destination == centralCell - 3) && source == centralCell) {
+        return 1;
+    }
+    if ((source == centralCell + 1 || source == centralCell - 1 || source == centralCell + 2 || source == centralCell - 2 ||
+         source == centralCell + 3 || source == centralCell - 3) && destination == centralCell) {
+        return 1;
+    }
+    // MOVIMIENTOS EN EL RESTO DEL TABLERO
+    if (destination == source + 1 || destination == source - 1) {
+        if ((source / 3 == destination / 3 && source < centralCell) || ((destination % 3 == 2 || source % 3 == 2) && source > centralCell)) {
             return 1;
         }
     }
+    if ((destination == source + 3 || destination == source - 3) && ((source < centralCell && destination < centralCell) || (source > centralCell && destination > centralCell))) {
+        return 1;
+    }
+    // CAPTURAS
+    // CAPTURAS SOBRE LA CASILLA CENTRAL
+    if ((source == centralCell + 1 && destination == centralCell - 1) || (source == centralCell - 1 && destination == centralCell + 1) ||
+        (source == centralCell + 2 && destination == centralCell - 2) || (source == centralCell - 2 && destination == centralCell + 2) ||
+        (source == centralCell + 3 && destination == centralCell - 3) || (source == centralCell - 3 && destination == centralCell + 3)) {
+        intermediateCell = goTopos(board, centralCell);
+        if (intermediateCell->token != 0 && intermediateCell->token != sourceCell->token) {
+            return 1;
+        }
+    }
+    if (source == centralCell && (abs(centralCell - destination) == 4 || abs(centralCell - destination) == 5) || abs(centralCell - destination) == 6) {
+        if (destination == centralCell + 6)
+            intermediateCell = goTopos(board, centralCell + 3);
+        if (destination == centralCell - 6)
+            intermediateCell = goTopos(board, centralCell - 3);
+        if (destination == centralCell + 5)
+            intermediateCell = goTopos(board, centralCell + 2);
+        if (destination == centralCell - 5)
+            intermediateCell = goTopos(board, centralCell - 2);
+        if (intermediateCell->token != 0 && intermediateCell->token != sourceCell->token) {
+            return 1;
+        }
+    }
+    // CAPTURAS EN EL RESTO DEL TABLERO
+    if (abs(source - destination) == 2) {
+        intermediateCell = goTopos(board, (source + destination) / 2);
+        if (intermediateCell->token != 0 && intermediateCell->token != sourceCell->token) {
+            return 1;
+        }
+    }
+    if (abs(source - destination) == 6 && (source / 3 == destination / 3)) {
+        intermediateCell = goTopos(board, (source + destination) / 2);
+        if (intermediateCell->token != 0 && intermediateCell->token != sourceCell->token) {
+            return 1;
+        }
+    }
+    if (abs(source - destination) == 4 && (source / 3 == destination / 3 || source % 3 == destination % 3)) {
+        intermediateCell = goTopos(board, (source + destination) / 2);
+        if (intermediateCell->token != 0 && intermediateCell->token != sourceCell->token) {
+            return 1;
+        }
+    }
+    // Si no se cumplen ninguna de las condiciones anteriores, el movimiento no es válido
     return 0;
 }
+
 
 int moveToken (int source, int destination, struct Board* board){
     struct Cell* sourceCell = goTopos(board, source);
     struct Cell* destinationCell = goTopos(board, destination);
     struct Cell* intermediateCell;
+    int centralCell = ((board->numCells - 1) / 2); //Calculo de la casilla central
 
-    if (isNeighbor(source, destination, board) == 1 && destinationCell->token == 0){ //Caso en el que la casilla de destino es vecina de la casilla de origen
-        destinationCell->token = sourceCell->token;
-        sourceCell->token = 0; 
-        printf("Movimiento exitoso\n"); 
-        return 1; 
-    }
-    //recorre los vecinos de la casilla de origen
-    
-    for (int i = 0; i < destinationCell->numNeighbors; i++){
-        intermediateCell = goTopos(board, destinationCell->neighbors[i]);
 
-        if (isNeighbor(source, destinationCell->neighbors[i], board) && intermediateCell->token != 0 && intermediateCell->token != sourceCell->token && destinationCell->token == 0){
+    if (destinationCell->token == 0){
+
+        //MOVIMINETOS SIMPLES//
+        //MOVIMIENTOS SOBRE LA CASILLA CENTRAL//
+        if ((destination == centralCell+1 || destination == centralCell-1 || destination == centralCell+2 || destination == centralCell-2 ||
+                destination == centralCell+3 || destination == centralCell-3) && source == centralCell){
+                destinationCell->token = sourceCell->token;
+                sourceCell->token = 0;
+                printf("Movimiento exitoso\n");
+                return 1;
+        
+        }
+        if ((source == centralCell+1 || source == centralCell-1 || source == centralCell+2 || source == centralCell-2 || 
+             source == centralCell+3 || source == centralCell-3) && destination == centralCell){
+                destinationCell->token = sourceCell->token;
+                sourceCell->token = 0;
+                printf("Movimiento exitoso\n");
+                return 1;
+        }
+  
+        // MOVIMINETOS EN EL RESTO DEL TABLERO
+        if (destination == source + 1 || destination == source - 1) {
+            if ((source / 3 == destination / 3  && source < centralCell) || ((destination % 3 == 2 || source % 3 == 2) && source > centralCell)){
+                destinationCell->token = sourceCell->token;
+                sourceCell->token = 0;
+                printf("Movimiento exitoso\n");
+                return 1;
+            }
+        }
+        if ((destination == source + 3 || destination == source - 3) && ((source<centralCell && destination<centralCell) || (source>centralCell && destination>centralCell))){
             destinationCell->token = sourceCell->token;
             sourceCell->token = 0;
-            intermediateCell->token = 0;
-            printf("Movimiento exitoso, captura realizada\n");
+            printf("Movimiento exitoso\n");
             return 1;
+        }
+
+        //CAPTURAS
+
+        //CAPTURAS SOBRE LA CASILLA CENTRAL//
+        if ((source == centralCell+1 && destination == centralCell-1) || (source == centralCell-1 && destination == centralCell+1) ||
+            (source == centralCell+2 && destination == centralCell-2) || (source == centralCell-2 && destination == centralCell+2) ||
+            (source == centralCell+3 && destination == centralCell-3) || (source == centralCell-3 && destination == centralCell+3)){
+            intermediateCell = goTopos(board, centralCell);
+            if (intermediateCell->token != 0 && intermediateCell->token != sourceCell->token){
+                destinationCell->token = sourceCell->token;
+                sourceCell->token = 0;
+                intermediateCell->token = 0;
+                printf("Movimiento exitoso, captura realizada\n");
+                return 1;
+            }
+        }
+        if (source == centralCell && (abs(centralCell-destination) == 4 || abs(centralCell-destination) == 5) || abs(centralCell-destination) == 6){
+            if (destination == centralCell+6)
+                intermediateCell = goTopos(board, centralCell+3);
+            if (destination == centralCell-6)
+                intermediateCell = goTopos(board, centralCell-3);
+            if (destination == centralCell+5)
+                intermediateCell = goTopos(board, centralCell+2);
+            if (destination == centralCell-5)
+                intermediateCell = goTopos(board, centralCell-2);
+            if (destination == centralCell+4)
+                intermediateCell = goTopos(board, centralCell+1);
+            if (destination == centralCell-4)
+                intermediateCell = goTopos(board, centralCell-1);        
+            if (intermediateCell->token != 0 && intermediateCell->token != sourceCell->token){
+                destinationCell->token = sourceCell->token;
+                sourceCell->token = 0;
+                intermediateCell->token = 0;
+                printf("Movimiento exitoso, captura realizada\n");
+                return 1;
+            }      
+        }  
+        if (destination == centralCell && (abs(centralCell-source) == 5 || abs(centralCell-source) == 4 || abs(centralCell-source) == 6)){
+            if (source == centralCell+6)
+                intermediateCell = goTopos(board, centralCell+3);
+            if (source == centralCell-6)
+                intermediateCell = goTopos(board, centralCell-3);
+            if (source == centralCell+5)
+                intermediateCell = goTopos(board, centralCell+2);
+            if (source == centralCell-5)
+                intermediateCell = goTopos(board, centralCell-2);
+            if (source == centralCell+4)
+                intermediateCell = goTopos(board, centralCell+1);
+            if (source == centralCell-4)
+                intermediateCell = goTopos(board, centralCell-1);
+           
+            if (intermediateCell->token != 0 && intermediateCell->token != sourceCell->token){
+                destinationCell->token = sourceCell->token;
+                sourceCell->token = 0;
+                intermediateCell->token = 0;
+                printf("Movimiento exitoso, captura realizada\n");
+                return 1;
+            }   
+        }
+
+        //CAPTURAS EN EL RESTO DEL TABLERO//
+        
+        //CAPTURAS VERTICALES//
+        if (destination == source+6 && (source != centralCell-1 && source != centralCell-2, source != centralCell-3)){
+            if (intermediateCell->token != 0 && intermediateCell->token != sourceCell->token){
+                destinationCell->token = sourceCell->token;
+                sourceCell->token = 0;
+                intermediateCell->token = 0;
+                printf("Movimiento exitoso, captura realizada\n");
+                return 1;
+            }
+        }
+        if (destination == source-6 && (source != centralCell+1 && source != centralCell+2, source != centralCell+3)){
+            intermediateCell = goTopos(board, source-3);
+            if (intermediateCell->token != 0 && intermediateCell->token != sourceCell->token){
+                destinationCell->token = sourceCell->token;
+                sourceCell->token = 0;
+                intermediateCell->token = 0;
+                printf("Movimiento exitoso, captura realizada\n");
+                return 1;
+            }
+        }
+
+        //CAPTURAS HORIZONTALES//
+        if (source%3 == 0|| destination%3 == 0){
+            if (destination == source+2){
+                intermediateCell = goTopos(board, source+1);
+                if (intermediateCell->token != 0 && intermediateCell->token != sourceCell->token){
+                    destinationCell->token = sourceCell->token;
+                    sourceCell->token = 0;
+                    intermediateCell->token = 0;
+                    printf("Movimiento exitoso, captura realizada\n");
+                    return 1;
+                }
+            }
+            if (destination == source-2){
+                intermediateCell = goTopos(board, source-1);
+                if (intermediateCell->token != 0 && intermediateCell->token != sourceCell->token){
+                    destinationCell->token = sourceCell->token;
+                    sourceCell->token = 0;
+                    intermediateCell->token = 0;
+                    printf("Movimiento exitoso, captura realizada\n");
+                    return 1;
+                }
+            }
         }
     }
     printf("Movimiento inválido\n");
     return 0;
 }
 
-int checkWinner (struct Board* board){
-    int player1 = 0;
-    int player2 = 0;
+int checkWinner(struct Board* board) {
+    int player1 = 0; // Contador de fichas del jugador 1
+    int player2 = 0; // Contador de fichas del jugador 2
     struct Cell* current = board->root;
-    for (int i = 0; i < board->numCells; i++){
-        if (current->token == 1){
-            player1++;
+
+    for (int i = 0; i < board->numCells; i++) { // Recorremos todas las celdas y contamos las fichas de cada jugador
+        if (current->token == 1) {
+            player1++; 
         }
-        if (current->token == 2){
+        if (current->token == 2) {
             player2++;
         }
         current = current->next;
     }
-    if (player1 == 0){
-        return 2;
-    }
-    if (player2 == 0){
-        return 1;
-    }
-    return 0;
-}
 
+    // Comprobamos si alguno de los jugadores se ha quedado sin fichas
+    if (player1 == 0) {
+        return 2; // Jugador 2 gana
+    }
+    if (player2 == 0) {
+        return 1; // Jugador 1 gana
+    }
 
-void addConnection(struct Board* board, int cell1, int cell2) {
-    struct Cell* cell_1 = goTopos(board, cell1);
-    struct Cell* cell_2 = goTopos(board, cell2);
-    cell_1->neighbors[cell_1->numNeighbors] = cell2;
-    cell_2->neighbors[cell_2->numNeighbors] = cell1;
-    cell_1->numNeighbors++;
-    cell_2->numNeighbors++;
+    // Comprobamos si alguno de los jugadores no tiene movimientos posibles
+    int player1HasMoves = hasValidMoves(1, board);
+    int player2HasMoves = hasValidMoves(2, board);
+
+    if (!player1HasMoves && !player2HasMoves){
+        return 3; // Empate, ninguno tiene movimientos posibles 
+    }
+    if (!player1HasMoves) {
+        return 2; // Jugador 2 gana
+    }
+    if (!player2HasMoves){
+        return 1; // Jugador 1 gana
+    }
+    return 0; // No hay ganador aun
+}   
+
+int hasValidMoves(int player, struct Board* board) {
+    struct Cell* current = board->root;
+
+    for (int i = 0; i < board->numCells; i++) {
+        if (current->token == player) {
+            for (int j = 0; j < board->numCells; j++) {
+                if (isValidMove(i, j, board)){
+                    return 1; // Se ha encontrado un movimiento valido para el jugador
+                }
+            }
+        }
+        current = current->next;
+    }
+    return 0; // No valid moves found for the player
 }
 
 
@@ -143,52 +348,6 @@ struct Board* createBoard(int depth, int topPlayer) {
         }
         current->next = createCell(i);
         current = current->next;    
-    }
-
-    //Agregar conexiones
-    int centralCell = ((numCells - 1) / 2);
-
-    //primer nivel superior
-    addConnection(board, centralCell, centralCell-1);
-    addConnection(board, centralCell, centralCell-2);
-    addConnection(board, centralCell, centralCell-3);
-    addConnection(board, centralCell-1, centralCell-2);
-    addConnection(board, centralCell-2, centralCell-3);
-
-    //primer nivel inferior
-    addConnection(board, centralCell, centralCell+1);
-    addConnection(board, centralCell, centralCell+2);
-    addConnection(board, centralCell, centralCell+3);
-    addConnection(board, centralCell+1, centralCell+2);
-    addConnection(board, centralCell+2, centralCell+3);
-
-    int currentColumn = 1;
-
-    //Conexiones Arriba
-    for (int currentCell = 0; currentCell < centralCell-3; currentCell++) {
-        if (currentColumn == 1 || currentColumn ==2 ){
-            addConnection(board, currentCell, currentCell+1);
-            addConnection(board, currentCell, currentCell+3);
-            currentColumn++;
-        }
-        else{
-            addConnection(board, currentCell, currentCell+3);
-            currentColumn = 1;
-        }
-    }
-    currentColumn = 1;
-
-    //Conexiones Abajo
-    for (int currentCell = numCells-1; currentCell>centralCell+3; currentCell--) {
-        if (currentColumn == 1 || currentColumn ==2 ){
-            addConnection(board, currentCell, currentCell-1);
-            addConnection(board, currentCell, currentCell-3);
-            currentColumn++;
-        }
-        else{
-            addConnection(board, currentCell, currentCell-3);
-            currentColumn = 1;
-        }
     }
     return board;
 }
@@ -307,41 +466,42 @@ void printBoard(struct Board* board, int depth) {
 
 
 int main(){
-    int currentPlayer = 1; //Jugador actual
-    int depth, source, destination, topPlayer; //profundidad del tablero, casiila de origen y casilla de destino
+    int currentPlayer = 0, depth = 0, source = 0, destination = 0, topPlayer = 0, winner = 0; //profundidad del tablero, casiila de origen y casilla de destino
 
-    while (depth < 3){
+    while (depth<3){
         printf("\nDigite la profundidad del tablero: ");
         scanf("%d", &depth);
-        if (depth < 3){
-            printf("Error: Profundidad inválida\n");
-        }
+        if (depth<2)
+            printf("ERROR: Profundidad inválida\n\n");
     }
-
-    printf("\n Digite quien empieza: \n 1. Jugador X \n 2. Jugador O \n");
-    while (scanf("%d", &currentPlayer) != 1 || currentPlayer < 1 || currentPlayer > 2){
-        printf("Error: Jugador inválido\n");
+  
+    while (currentPlayer != 1 && currentPlayer != 2){
+        printf("\n 1. Jugador X \n 2. Jugador O \n Digite quien empieza: ");
+        scanf("%d", &currentPlayer);
+        if (currentPlayer != 1 && currentPlayer != 2)
+            printf("ERROR: Jugador inválido\n\n");
     }
     
-    printf("Digite quien juega en lado de arriba del tablero: \n 1. Jugador X \n 2. Jugador O \n");
-    while (scanf("%d", &topPlayer) != 1 || topPlayer < 1 || topPlayer > 2){
-        printf("Error: Jugador inválido\n");
+    while (topPlayer != 1 && topPlayer != 2){
+        printf(" \n 1. Jugador X \n 2. Jugador O \nDigite quien juega en lado de arriba del tablero: ");
+        scanf("%d", &topPlayer);
+        if (topPlayer != 1 && topPlayer != 2)
+            printf("ERROR: Jugador inválido\n\n");
     }
     
     struct Board* board = createBoard(depth,topPlayer); //Creación del tablero
 
-
-   while (checkWinner(board) == 0){
+   while (winner == 0){
         printBoard(board, depth); //Imprimir tablero
         if (currentPlayer == 1){
             printf("\n\nJugador X, digite la casilla de origen: ");
             scanf("%d", &source);
             if (source > board->numCells || source < 0){
-                printf("Error: Casilla inválida\n");
+                printf("ERROR: Casilla inválida\n");
                 continue;
             }
             if (goTopos(board, source)->token != 1){
-                printf("Error: Solo puedes mover tus propias fichas\n");
+                printf("ERROR: Solo puedes mover tus propias fichas\n");
                 continue;
             }
             printf("Jugador X, digite la casilla de destino: ");
@@ -351,14 +511,14 @@ int main(){
             printf("\n\nJugador O, digite la casilla de origen: ");
             scanf("%d", &source);
             if (source > board->numCells || source < 0){
-                printf("Error: Casilla inválida\n");
+                printf("ERROR: Casilla inválida\n");
                 continue;
             }
             if (goTopos(board, source)->token != 2){
-                printf("Error: Solo puedes mover tus propias fichas\n"); //CORREGIR MENSAJE
+                printf("ERROR: Solo puedes mover tus propias fichas\n"); //CORREGIR MENSAJE
                 continue;
             }
-            printf("Jugador X, digite la casilla de destino: ");
+            printf("Jugador O, digite la casilla de destino: ");
             scanf("%d", &destination);
         }
         if (moveToken(source, destination, board) == 0){//Mover ficha
@@ -370,10 +530,19 @@ int main(){
         else{
             currentPlayer = 1;
         }
+        winner = checkWinner(board);
     }
-    printBoard(board, depth);
-    printf("\n\nEl ganador es el jugador %d\n", checkWinner(board));
 
+    printBoard(board, depth);
+    if (winner == 1){
+        printf("\n\n¡Ganó el jugador X!\n");
+    }
+    else if (winner == 2){
+        printf("\n\n¡Ganó el jugador O!\n");
+    }
+    else{
+        printf("\n\n¡Hay un Empate!\n");
+    }
     return 0;
 }
 
