@@ -28,6 +28,23 @@ struct Board {
 };
 
 /*
+    * Funcion para obtener a una casilla especifica del tablero.
+    * Entradas: puntero al tablero, indice de la casilla.
+    * Salidas: puntero a la casilla.
+*/
+struct Cell* goTopos(struct Board* board, int pos) {
+    if (pos < 0 || pos > board->numCells) {
+        printf("Error: Casilla inválida\n");
+        return NULL;
+    }
+    struct Cell* current = board->root;
+    for (int i = 0; i < pos; i++) {
+        current = current->next;
+    }
+    return current;
+}
+
+/*
     * Funcion para mover una ficha de una casilla a otra.
     * Entradas: indice de la casilla de origen y destino, puntero al tablero.
     * Salidas: 1 si el movimiento fue exitoso, 0 si no.
@@ -459,23 +476,6 @@ void printBoard(struct Board* board, int depth) {
         leftSpaces -= 2;
     }
     return;
-}
-
-/*
-    * Funcion para obtener a una casilla especifica del tablero.
-    * Entradas: puntero al tablero, indice de la casilla.
-    * Salidas: puntero a la casilla.
-*/
-struct Cell* goTopos(struct Board* board, int pos) {
-    if (pos < 0 || pos > board->numCells) {
-        printf("Error: Casilla inválida\n");
-        return NULL;
-    }
-    struct Cell* current = board->root;
-    for (int i = 0; i < pos; i++) {
-        current = current->next;
-    }
-    return current;
 }
 
 /*
