@@ -1,2 +1,3 @@
 # Lau-kata-kati-C
-An implementation of the traditional game "Lau Kata Kati" in C, using linked lists to create the game's graph structure.
+Juego de mesa hecho en C, utilizando únicamente listas enlazadas y punteros.
+Autor: Kevin Cubillo Ch.
