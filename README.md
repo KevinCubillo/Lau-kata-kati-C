@@ -1,3 +1,3 @@
 # Lau-kata-kati-C
-Juego de mesa hecho en C, utilizando únicamente listas enlazadas y punteros.
-Autor: Kevin Cubillo Ch.
+Board game made in C, using only linked lists and pointers.
+Author: Kevin Cubillo.
